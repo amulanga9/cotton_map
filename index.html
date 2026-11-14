@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="ru"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>PAXTA · 綿花の弧</title>
+<style>
+:root{color-scheme:light;--bg:#e8eee9;--fg:#13221a;--mut:#4a6154;--ac:#0b7a3c;--pn:rgba(247,250,247,.9);--ln:rgba(19,34,26,.14);--grid:#a7bbad;--cot:#cdc5ae;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){color-scheme:dark;--bg:#111a17;--fg:#dde8e1;--mut:#9bb0a4;--ac:#46d986;--pn:rgba(24,36,31,.88);--ln:rgba(221,232,225,.13);--grid:#2b3f36;--cot:#e9e2cf}}
+:root[data-theme="dark"]{color-scheme:dark;--bg:#111a17;--fg:#dde8e1;--mut:#9bb0a4;--ac:#46d986;--pn:rgba(24,36,31,.88);--ln:rgba(221,232,225,.13);--grid:#2b3f36;--cot:#e9e2cf}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:radial-gradient(900px 500px at 70% 10%,color-mix(in srgb,var(--ac) 4%,transparent),transparent),var(--bg);color:var(--fg);font:14px/1.4 system-ui,-apple-system,"Segoe UI","Hiragino Sans","Yu Gothic",Roboto,sans-serif;overflow:hidden}
+#c{position:fixed;inset:0;width:100%;height:100%;touch-action:none;cursor:default}
+#hud{position:fixed;left:14px;top:calc(14px + env(safe-area-inset-top,0px));width:270px;max-height:calc(100% - 28px);overflow:auto;background:var(--pn);border:1px solid var(--ln);border-radius:16px;padding:14px;backdrop-filter:blur(10px)}
+h1{margin:0;font-size:26px;letter-spacing:.04em;font-weight:800}
+h1+p{margin:0 0 4px;color:var(--mut);font-size:12px}
+h2{margin:12px 0 4px;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--mut);font-weight:600}
+button{all:unset;cursor:pointer;display:flex;align-items:center;gap:8px;padding:4px 6px;border-radius:8px;width:100%;box-sizing:border-box}
+button:focus-visible{outline:2px solid var(--ac);outline-offset:1px}button:hover{background:var(--ln)}button.off{opacity:.35}
+button i,#card i{width:10px;height:10px;border-radius:50%;flex:none;display:inline-block}
+button b{margin-left:auto;color:var(--mut);font-weight:500}
+#lg{display:flex;gap:6px;margin-bottom:8px}#lg button{width:auto;padding:3px 12px;border:1px solid var(--ln)}#lg .on{background:var(--ac);color:var(--bg);border-color:transparent}
+.pr{padding:5px 6px;border-radius:8px;cursor:pointer}.pr:hover,.pr.sel{background:var(--ln)}
+.pr .t{display:flex;gap:6px;align-items:baseline;font-size:13px}.pr em{color:var(--mut);font-size:11px;font-style:normal}.pr b{margin-left:auto;color:var(--ac)}
+.bar{display:flex;height:5px;border-radius:3px;overflow:hidden;margin-top:4px;background:var(--ln)}
+.note{margin:10px 0 0;color:var(--mut);font-size:11px}
+#card{position:fixed;right:14px;top:calc(14px + env(safe-area-inset-top,0px));width:280px;background:var(--pn);border:1px solid var(--ln);border-radius:16px;padding:14px;backdrop-filter:blur(10px)}
+#card[hidden]{display:none}#card h3{margin:6px 0 2px;font-size:17px;line-height:1.25}#card p{margin:2px 0;color:var(--mut)}
+#card small{margin-left:6px;color:var(--mut)}#card a{color:var(--ac);font-weight:600;text-decoration:none;display:inline-block;margin-top:8px}
+#hint{position:fixed;right:14px;bottom:calc(12px + env(safe-area-inset-bottom,0px));color:var(--mut);font-size:11px}
+@media (max-width:700px){#hud{left:8px;right:8px;top:auto;bottom:calc(8px + env(safe-area-inset-bottom,0px));width:auto;max-height:34%}#card{left:8px;right:8px;top:calc(8px + env(safe-area-inset-top,0px));width:auto}#hint{display:none}}
+</style></head><body>
+<canvas id="c"></canvas>
+<div id="hud"><div id="lg"><button data-l="ru">RU</button><button data-l="ja">日本語</button></div><h1 id="h1"></h1><p id="sub"></p>
+<h2 id="h2a"></h2><div id="leg"></div><h2 id="h2b"></h2><div id="per"></div><p class="note" id="note"></p></div>
+<div id="card" hidden></div><div id="hint"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+const I={ru:{h:'ПАХТА',sub:'дуга хлопка · 1860–2026',t:'Тип',p:'Периоды',n:'Высота = интерпретация тональности произведения исследователем. Классификация аналитическая, не является авторской оценкой. ≈ — дата примерная.',hi:'тяни — вращать · пробел + тяни — двигать всё · колесо — зум · клик — к точке',src:'источник ↗',tone:['гордость · модернизация','боль · критика','нейтрально'],arc:'дуга хлопка',
+ T:['Исследования','Литература и театр','Музыка','Кино','Искусство и выставки','Пресса и голоса'],P:['Империя','Монокультура','Пик плана','Дело и протест','После СССР','Рефлексия']},
+ ja:{h:'パフタ',sub:'綿花の弧 · 1860–2026',t:'種類',p:'時代',n:'高さ＝研究者によるその作品のトーンの解釈。分類は分析的なもので、作者自身の評価ではありません。≈は概算の年。',hi:'ドラッグで回転 · スペース＋ドラッグで全体を移動 · ホイールでズーム · クリックで点へ',src:'出典 ↗',tone:['誇り・近代化','痛み・批判','中立'],arc:'綿花の弧',
+ T:['研究','文学・演劇','音楽','映画','美術・展覧会','報道・証言'],P:['帝国','モノカルチャー','計画のピーク','事件と抗議','ソ連崩壊後','再考']}};
+const C=['#7ea6f2','#e8c75a','#e883a8','#4fcf8a','#f0a35c','#a995e6'];
+const PR=[[1860,1917],[1918,1969],[1970,1982],[1983,1991],[1992,2016],[2017,2026]];
+const U={per:'https://perito.media/posts/sdelano-v-uzbekistane',cuc:'https://unora.unior.it/retrieve/handle/11574/195734/78737/Cucciolla_phdthesis_compressed.pdf',cb:'https://carlbeckpapers.pitt.edu/ojs/cbp/article/download/205/222',ori:'https://turkfolklorarastirmalari.com/index.php/pub/article/download/121/256/539',sal:'https://centrasia.org/newsA.php?st=1043960400',bos:'https://journals.iium.edu.my/asiatic/index.php/ajell/article/view/4184',yus:'https://adebiyat.uz/ibrayim-yusupov/aralga',zi:'https://www.ziyouz.uz/ru/folklor/uzbekskaya-narodnaya-poeziya/735-2012-09-08-09-58-45',fw:'https://folkways.si.edu/uzbekh-ssr-song-of-the-cotton-picker/central-asia-islamica-world/music/track/smithsonian',fk:'https://www.farrahkarapetian.com/fieldwork',cin:'https://cinema.academic.ru/4492/%D0%A3%D0%B7%D0%B1%D0%B5%D0%BA%D1%81%D0%BA%D0%BE%D0%B9_%D0%A1%D0%A1%D0%A0_%D0%BA%D0%B8%D0%BD%D0%B5%D0%BC%D0%B0%D1%82%D0%BE%D0%B3%D1%80%D0%B0%D1%84%D0%B8%D1%8F',kt:'https://www.kino-teatr.ru/kino/movie/sov/13194/annot/',az:'https://www.azattyqasia.org/a/27276397.html',tt:'https://turalturan.wordpress.com/2020/01/04/%D0%BE%D1%82%D0%B7%D1%8B%D0%B2-%D0%BE-%D0%B4%D0%BE%D0%BA%D1%83%D0%BC%D0%B5%D0%BD%D1%82%D0%B0%D0%BB%D1%8C%D0%BD%D0%BE%D0%BC-%D1%84%D0%B8%D0%BB%D1%8C%D0%BC%D0%B5-%D0%B7%D0%BE%D0%BB%D0%BE%D1%82/',ejf:'https://ejfoundation.org/what-we-do/sustainable-fashion/uncovering-exploitation-in-uzbekistan',es:'http://esgrs.org/?p=30147',sp:'https://www.stefanietrambow.de/en/projekt/speaking-cotton/',as:'https://www.antislavery.org/latest/documentary-uzbek-forced-labour/',ct2:'https://www.currenttime.tv/a/cotton-100-doc/32172882.html',prp:'https://prp.kz/2026/01/22/uzbekistan-na-ekrane-tallinna-mezhdu-hlopkovym-polem-i-pamyatyu-kino/',or:'https://orientmuseum.ru/events/2025/beloe_zoloto/index.php',an:'https://anticvarium.ru/lot/show/6093',mu:'https://karakalpakstan.travel/museums-and-exhibitions/muynak-museum/',mst:'https://museumstudiesabroad.org/lysenko-savitsky-preserving-soviet-avant-garde/',ox:'https://sanat.orexca.com/2004-rus/2004-1-2/sea-2/',n98:'https://www.98mag.kz/gorod/kak-uzbekistanskie-hudozhniki-razoblachayut-kult-belogo-zolota/',gz:'https://www.gazeta.uz/ru/2022/12/27/paxta/',hv:'https://news.harvard.edu/gazette/story/newsplus/the-things-they-shared/',bn:'https://www.labiennale.org/en/art/2026/uzbekistan-republic',uza:'https://uza.uz/en/posts/the-image-of-uzbekistan-through-the-eyes-of-an-arab-photographer_813944',ndl:'https://ndl.ethernet.edu.et/bitstream/123456789/26343/1/28.pdf',dj:'https://djvu.online/file/amSymAQvSI1yM',ct:'https://www.currenttime.tv/a/27316887.html',uf:'https://www.uzbekforum.org/uzbekistan-the-stories-of-forced-labor/',da:'https://daryo.uz/en/2024/11/13/the-curse-of-white-gold-how-cotton-enslaved-uzbekistan-1202824/',yep:'https://yep.uz/en/2025/10/cotton-harvesting-uzbekistan-1980s-memories-1950s-photos/'};
+// [год, тип, тон −1…1, название, автор, ссылка, ≈]; массив = [ru, ja]
+const D=[
+[1885,0,0,['«Хлопковая лихорадка» в Туркестане','トルキスタンの「綿花ブーム」'],'Carl Beck Papers',U.cb,1],
+[2014,0,0,'Empire of Cotton','S. Beckert',U.per],
+[2015,0,0,['Советский кишлак','ソヴィエトのキシュラク'],'S. Abashin',U.per],
+[2017,0,0,'Imperial Desert Dreams','J. Obertreis',U.per],
+[2017,0,0,'The Uzbek cotton affair','R. M. Cucciolla',U.cuc],
+[1964,1,.8,['Лунная дорога из хлопка','綿花の月の道'],'Ch. Aitmatov',U.per],
+[1986,1,-.7,['Аралга («Для Арала»)','アラルガ（アラルへ）'],'A. Oripov',U.ori,1],
+[1988,1,-.9,['«Здоровье женщинам»','「女性に健康を」'],'M. Salih',U.sal],
+[1989,1,-.3,'Temir xotin','Sh. Boshbekov',U.bos],
+[1998,1,-.6,'Aralǵa','I. Yusupov',U.yus],
+[1915,2,-.8,['«Белый хлопок — чёрные дни»','「白い綿花、黒い日々」'],['фольклор','民謡'],U.zi,1],
+[1960,2,.7,'Song of the Cotton Picker','Folkways',U.fw],
+[1975,2,.9,['Песни хлопкового праздника','綿花祭の歌'],['агитпесня','宣伝歌'],U.per,1],
+[2022,2,-.2,['Песни памяти поля','畑の記憶の歌'],'Who to Cotton',U.fk],
+[1931,3,.9,['Пионеры в борьбе за хлопок','綿花をめぐる闘いのパイオニア'],'Agzamov',U.cin],
+[1948,3,.8,['Дочь Ферганы','フェルガナの娘'],'Ganiev',U.cin],
+[1957,3,.4,['Рыбаки Арала','アラルの漁師たち'],'Uzbekfilm',U.kt],
+[1991,3,-.6,['Железная женщина («Темир хотин»)','鉄の女（テミル・ホティン）'],'I. Ergashev',U.az,1],
+[2005,3,-.5,['Золото для партии','党のための黄金'],['док. фильм','記録映画'],U.tt],
+[2007,3,-.8,'White Gold: The True Cost of Cotton','EJF',U.ejf],
+[2010,3,-.6,['Арал. Потерянное море','アラル 失われた海'],'I. Coixet',U.es],
+[2011,3,-.8,'Speaking Cotton','S. Trambow, E. Malchow',U.sp],
+[2016,3,-.8,'Forced labour documentary','Anti-Slavery Intl',U.as],
+[2021,3,-.8,['Хлопок 100%','綿花100%'],'M. Borodin',U.ct2],
+[2022,3,-.3,'Who to Cotton','F. Karapetian',U.fk],
+[2025,3,-.5,['Хлопок','綿花'],'R. Malikov',U.prp],
+[1930,4,.9,['Узбекистан (плакат)','ウズベキスタン（ポスター）'],'V. Yeremyan',U.or],
+[1934,4,.9,['Ударная женская бригада','女性突撃班'],'M. Kurzin',U.or],
+[1950,4,.9,['«Мы вырастили богатый урожай хлопка!»','「綿花の豊作を育てた！」'],'V. Kaidalov',U.an],
+[1965,4,-.5,['Живописная хроника Арала','アラルの絵画年代記'],'Matevosyan, Madgazin',U.mu,1],
+[1967,4,0,'Aral Sea','A. A. Volkov',U.mst],
+[1984,4,-.1,['Муйнакский экологический музей','ムイナク環境博物館'],['основан в 1984','1984年設立'],U.mu],
+[2004,4,-.7,['«Море уходит…»','「海は去りゆく…」'],'Baybosinov, Saparov, Serekeev',U.ox],
+[2022,4,-.8,'Cotton BOMB','A. Fedorov',U.n98],
+[2022,4,-.7,['«Пахта», 139 Documentary Center','「パフタ」139ドキュメンタリーセンター'],'U. Akhmedova',U.gz],
+[2025,4,.2,['Белое золото. Хлопок в искусстве советского Востока','白い黄金――ソ連東方美術の綿花'],['Музей Востока','東洋博物館'],U.or],
+[2025,4,-.4,'The Things They Shared','F. Karapetian',U.hv],
+[2026,4,-.3,'The Aural Sea (Venice Biennale)','Uzbekistan pavilion',U.bn],
+[2026,4,-.5,'Muynak: The Tragedy of the Aral Sea','A. W. Sawalha',U.uza],
+[1988,5,-.8,['Ёкубов: монокультура и Арал','ヨクボフ：モノカルチャーとアラル'],'O. Yoqubov',U.ndl,1],
+[1989,5,-.7,['Стенограмма I съезда народных депутатов','人民代議員大会 速記録'],'USSR',U.dj],
+[1989,5,-.8,['Оппозиционная пресса','野党系の報道'],'Birlik, Erk',U.cuc,1],
+[2013,5,-.5,['Принудительные концерты для сборщиков','収穫者への強制コンサート'],'Current Time',U.ct],
+[2015,5,-.6,['Актёры «Узбекфильма» на уборке','俳優たちが綿摘みに'],'Azattyq',U.az],
+[2022,5,-.8,'Stories of Forced Labour','Uzbek-German Forum',U.uf,1],
+[2024,5,-.5,'The curse of «White Gold»','Daryo',U.da],
+[2025,5,-.3,['Воспоминания об уборке 1979–81','1979–81年の綿摘みの回想'],'yep.uz',U.yep]];
+
+let lg=(navigator.language||'').slice(0,2)=='ja'?'ja':'ru';
+const tx=v=>Array.isArray(v)?v[lg=='ja'?1:0]:v,$=id=>document.getElementById(id);
+const per=y=>PR.findIndex(p=>y>=p[0]&&y<=p[1]);
+const cnt=PR.map(()=>I.ru.T.map(()=>0)),nT=I.ru.T.map(()=>0);D.forEach(d=>{cnt[per(d[0])][d[1]]++;nT[d[1]]++});
+const tot=cnt.map(r=>r.reduce((a,b)=>a+b,0)),mx=Math.max(...tot);
+const ft=new Set(nT.map((_,i)=>i));let fp=-1,sel=null,hov=null;
+
+const el=$('c'),R=new THREE.WebGLRenderer({canvas:el,antialias:true,alpha:true});
+R.setPixelRatio(Math.min(devicePixelRatio,2));
+const S=new THREE.Scene(),cam=new THREE.PerspectiveCamera(45,1,.1,200),G=new THREE.Group();S.add(G);
+const X=y=>(y-1860)/166*22-11,Y=t=>t*3,Z=i=>(i-2.5)*1.7,FL=-3.6;
+const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const gm=new THREE.LineBasicMaterial({color:0x888888,transparent:true,opacity:.7}),am=new THREE.MeshBasicMaterial({color:0x2bff88,transparent:true});
+const cots=[];function theme(){gm.color.set(css('--grid'));am.color.set(css('--ac'));cots.forEach(m=>m.color.set(css('--cot')))}
+theme();matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{theme();labels()});
+function lab(txt,col,sz){const c=document.createElement('canvas');c.width=640;c.height=96;const x=c.getContext('2d');x.font='700 36px system-ui,"Hiragino Sans","Yu Gothic",sans-serif';x.fillStyle=col;x.textAlign='center';x.textBaseline='middle';x.fillText(txt,320,48);const s=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(c),transparent:true,depthTest:false}));s.scale.set(sz*6.67,sz,1);return s}
+// сетка
+const gp=[];T6=[0,1,2,3,4,5];T6.forEach(i=>gp.push(-11,FL,Z(i),11,FL,Z(i)));
+PR.forEach(p=>{const x=X(p[0]);gp.push(x,FL,Z(0)-1,x,FL,Z(5)+1,x,FL,Z(0)-1,x,3.4,Z(0)-1)});
+gp.push(11,FL,Z(0)-1,11,FL,Z(5)+1,-11,0,Z(0)-1,11,0,Z(0)-1);
+const gg=new THREE.BufferGeometry();gg.setAttribute('position',new THREE.Float32BufferAttribute(gp,3));G.add(new THREE.LineSegments(gg,gm));
+PR.forEach((p,i)=>{const a=X(p[0]),b=X(p[1]+1),f=new THREE.Mesh(new THREE.PlaneGeometry(b-a,Z(5)-Z(0)+2),new THREE.MeshBasicMaterial({color:i%2?0x2bff88:0x6f9bff,transparent:true,opacity:.025,depthWrite:false,side:2}));f.rotation.x=-Math.PI/2;f.position.set((a+b)/2,FL,(Z(0)+Z(5))/2);G.add(f)});
+const lbl=[];
+function labels(){lbl.forEach(s=>{G.remove(s);s.material.map.dispose();s.material.dispose()});lbl.length=0;const t=I[lg],add=(s,x,y,z)=>{s.position.set(x,y,z);G.add(s);lbl.push(s)};
+ PR.forEach((p,i)=>add(lab(t.P[i],css('--mut'),.62),(X(p[0])+X(p[1]+1))/2,FL-.2,Z(5)+1.9));
+ add(lab(t.tone[0],css('--mut'),.5),-11.2,3.5,Z(0)-1);add(lab(t.tone[1],css('--mut'),.5),-11.2,-3,Z(0)-1);
+ [1900,1950,2000].forEach(y=>add(lab(String(y),css('--mut'),.5),X(y),FL-.2,Z(0)-1.4));
+ add(lab(t.arc,css('--ac'),.7),arcP[0].x,arcP[0].y+.9,0)}
+// хлопковые коробочки
+const gs=new THREE.SphereGeometry(.12,10,8),gc=new THREE.ConeGeometry(.05,.15,5),gh=new THREE.SphereGeometry(.34,10,8);
+function boll(col){const g=new THREE.Group(),wm=(cots[cots.length]=new THREE.MeshBasicMaterial({color:0xe9e2cf,transparent:true})),cm=new THREE.MeshBasicMaterial({color:col,transparent:true}),hm=new THREE.MeshBasicMaterial({color:col,transparent:true,opacity:.03,depthWrite:false});
+ [[0,.06,0],[.1,-.02,.05],[-.1,-.02,.05],[0,-.02,-.11],[.02,.14,.06]].forEach(p=>{const s=new THREE.Mesh(gs,wm);s.position.set(p[0],p[1],p[2]);g.add(s)});
+ for(let k=0;k<5;k++){const a=k/5*6.283,c=new THREE.Mesh(gc,cm);c.position.set(Math.cos(a)*.12,-.14,Math.sin(a)*.12);c.rotation.set(Math.sin(a),0,-Math.cos(a));g.add(c)}
+ const h=new THREE.Mesh(gh,hm);g.add(h);g.userData.mats=[[wm,1],[cm,1],[hm,.03]];g.userData.h=h;g.scale.setScalar(1.3);return g}
+const pts=[],dl=[];
+D.forEach((d,i)=>{const m=boll(C[d[1]]),j=((i*37)%11-5)/20;m.position.set(X(d[0])+j*.5,Y(d[2])+((i*13)%7-3)*.05,Z(d[1])+j*.9);
+ Object.assign(m.userData,{d,i,pi:per(d[0]),p0:m.position.clone(),k:1.3});G.add(m);pts.push(m);dl.push(m.position.x,m.position.y,m.position.z,m.position.x,FL,m.position.z)});
+const dg=new THREE.BufferGeometry();dg.setAttribute('position',new THREE.Float32BufferAttribute(dl,3));
+const dls=new THREE.LineSegments(dg,new THREE.LineBasicMaterial({color:0x888888,transparent:true,opacity:.16}));dls.frustumCulled=false;G.add(dls);
+// дуга: средний тон периода (если в нём не меньше двух нетеоретических артефактов)
+const arcP=[],NR=D.filter(d=>d[1]>0);for(let y=1930;y<=2026;y++){let a=0,b=0;NR.forEach(d=>{const w=Math.exp(-Math.pow((y-d[0])/9,2)/2);a+=w*d[2];b+=w});arcP.push(new THREE.Vector3(X(y),Y(a/b),0))}
+const arc=new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(arcP),400,.06,16),am);arc.renderOrder=5;G.add(arc);theme();
+// камера
+const foc=new THREE.Vector3(),tf=new THREE.Vector3();let A=.55,B=.38,rad=27,tr=27;
+const home=()=>innerWidth<700?34:27;
+function place(){foc.lerp(tf,.08);rad+=(tr-rad)*.08;const h=rad*Math.cos(B);cam.position.set(foc.x+h*Math.sin(A),foc.y+rad*Math.sin(B),foc.z+h*Math.cos(A));cam.lookAt(foc)}
+function size(){const w=innerWidth,h=innerHeight;R.setSize(w,h,false);cam.aspect=w/h;cam.updateProjectionMatrix()}
+addEventListener('resize',size);size();rad=tr=home();
+// ввод
+const RM=matchMedia('(prefers-reduced-motion: reduce)').matches;let auto=RM?0:1,pd=0,mv=0;const ptr=new Map();
+const dist=()=>{const a=[...ptr.values()];return Math.hypot(a[0][0]-a[1][0],a[0][1]-a[1][1])||1};
+const vp=new THREE.Vector3();
+function scr(m){vp.copy(m.position);vp.project(cam);return[(vp.x+1)/2*innerWidth,(1-vp.y)/2*innerHeight]}
+function near(e){const r=el.getBoundingClientRect();let b=null,bd=40;pts.forEach(m=>{if(!m.visible||(fp>=0&&m.userData.pi!=fp))return;const s=scr(m),d=Math.hypot(s[0]-(e.clientX-r.left),s[1]-(e.clientY-r.top));if(d<bd){bd=d;b=m}});return b}
+let pan1=0,drag=0,pp=[0,0],pm=[0,0];
+const mid=()=>{const a=[...ptr.values()];return[(a[0][0]+a[1][0])/2,(a[0][1]+a[1][1])/2]};
+function pan(dx,dy){const k=rad*.0017,r=new THREE.Vector3().setFromMatrixColumn(cam.matrix,0),u=new THREE.Vector3().setFromMatrixColumn(cam.matrix,1),d=r.multiplyScalar(-dx*k).add(u.multiplyScalar(dy*k));foc.add(d);tf.add(d)}
+el.oncontextmenu=e=>e.preventDefault();
+el.onpointerdown=e=>{el.setPointerCapture(e.pointerId);ptr.set(e.pointerId,[e.clientX,e.clientY]);mv=0;auto=0;pan1=e.button==2||e.button==1||e.shiftKey||sp;if(pan1)el.style.cursor='grabbing';pp=[e.clientX,e.clientY];if(ptr.size==2){pd=dist();pm=mid()}};
+el.onpointermove=e=>{if(ptr.has(e.pointerId)){const o=ptr.get(e.pointerId),dx=e.clientX-o[0],dy=e.clientY-o[1];ptr.set(e.pointerId,[e.clientX,e.clientY]);mv+=Math.abs(dx)+Math.abs(dy);pp=[e.clientX,e.clientY];if(mv>6)drag=1
+ if(ptr.size==1){if(pan1)pan(dx,dy);else{A-=dx*.006;B=Math.max(.05,Math.min(1.4,B+dy*.006))}}else{const d=dist(),m=mid();tr=Math.max(5,Math.min(45,tr*pd/d));pd=d;pan(m[0]-pm[0],m[1]-pm[1]);pm=m}}else{hov=near(e);el.style.cursor=hov?'pointer':sp?'grab':''}};
+el.onpointerup=e=>{if(ptr.size==1&&mv<6){const m=near(e);m?grab(m):release()}ptr.delete(e.pointerId);if(!ptr.size){drag=0;el.style.cursor=sp?'grab':''}};
+el.onpointercancel=e=>{ptr.delete(e.pointerId);if(!ptr.size)drag=0};
+el.onwheel=e=>{e.preventDefault();tr=Math.max(5,Math.min(45,tr*(1+e.deltaY*.001)))};
+// лапка
+let sp=0;
+function grab(m){sel=m;show();tf.copy(m.userData.p0);tr=10}
+function release(){sel=null;show();tf.set(0,0,0);tr=home()}
+addEventListener('keydown',e=>{if(e.code=='Space'){e.preventDefault();if(document.activeElement)document.activeElement.blur();if(!sp){sp=1;el.style.cursor='grab'}}});
+addEventListener('keyup',e=>{if(e.code=='Space'){sp=0;el.style.cursor=''}});
+function show(){const c=$('card');if(!sel){c.hidden=true;return}const t=I[lg],[yr,ty,tn,ti,wh,url,ap]=sel.userData.d;
+ c.innerHTML='<i style="background:'+C[ty]+'"></i><small>'+t.T[ty]+' · '+(ap?'≈':'')+yr+'</small><h3>'+tx(ti)+'</h3><p>'+tx(wh)+'</p><p>'+(tn>.3?t.tone[0]:tn<-.3?t.tone[1]:t.tone[2])+'</p><a href="'+url+'" target="_blank" rel="noopener">'+t.src+'</a>';c.hidden=false}
+// интерфейс
+function upd(){pts.forEach(m=>{const u=m.userData;m.visible=ft.has(u.d[1])&&(fp<0||u.pi==fp)});
+ const q=[];pts.forEach(m=>{if(m.visible){const p=m.userData.p0;q.push(p.x,p.y,p.z,p.x,FL,p.z)}});dls.geometry.setAttribute('position',new THREE.Float32BufferAttribute(q,3));
+ if(sel&&!sel.visible)release();
+ document.querySelectorAll('#leg button').forEach(b=>b.classList.toggle('off',!ft.has(+b.dataset.t)));
+ document.querySelectorAll('.pr').forEach(b=>b.classList.toggle('sel',+b.dataset.p==fp))}
+function render(){const t=I[lg];document.documentElement.lang=lg;$('h1').textContent=t.h;el.setAttribute('role','img');el.setAttribute('aria-label',t.h+' — '+t.sub);$('sub').textContent=t.sub;$('h2a').textContent=t.t;$('h2b').textContent=t.p;$('note').textContent=t.n;$('hint').textContent=t.hi;
+ $('leg').innerHTML=t.T.map((n,i)=>'<button data-t="'+i+'"><i style="background:'+C[i]+'"></i>'+n+'<b>'+nT[i]+'</b></button>').join('');
+ $('per').innerHTML=t.P.map((n,i)=>'<div class="pr" data-p="'+i+'"><div class="t"><span>'+n+'</span><em>'+PR[i][0]+'–'+PR[i][1]+'</em><b>'+tot[i]+'</b></div><div class="bar" style="width:'+(tot[i]/mx*100)+'%">'+cnt[i].map((k,j)=>k?'<span style="flex:'+k+';background:'+C[j]+'"></span>':'').join('')+'</div></div>').join('');
+ document.querySelectorAll('#lg button').forEach(b=>b.classList.toggle('on',b.dataset.l==lg));labels();upd();show()}
+$('lg').onclick=e=>{const b=e.target.closest('button');if(b){lg=b.dataset.l;render()}};
+$('leg').onclick=e=>{const b=e.target.closest('button');if(!b)return;const t=+b.dataset.t;ft.has(t)?ft.delete(t):ft.add(t);upd()};
+$('per').onclick=e=>{const b=e.target.closest('.pr');if(!b)return;const p=+b.dataset.p;fp=fp==p?-1:p;upd()};
+render();
+let t0=performance.now();
+(function loop(now){const dt=Math.min((now-t0)/1000,.1)||0;t0=now;if(auto)A+=.0014;place();
+ pts.forEach(m=>{const u=m.userData,k=m==sel?2:m==hov?1.7:1.3;u.k+=(k-u.k)*.15;m.scale.setScalar(u.k);m.position.y=u.p0.y+Math.sin(now/700+u.i)*(RM?0:.05)});
+ R.render(S,cam);requestAnimationFrame(loop)})(t0);
+</script></body></html>
